@@ -1,4 +1,5 @@
 import streamlit as st
+st.image("TINY.jpg", width=300)
 import requests
 import json
 
