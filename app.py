@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 
-# Refined prompt to evaluate brand formulation independent of parent conglomeration records
+# Master prompt mapping descriptions to output details cleanly
 CRITERIA_PROMPT = """
 You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product against a specific 10-point ethical framework.
 
@@ -48,6 +48,20 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
     }
 }
 """
+
+# Dictionary to dynamically display the clear criteria rules in the UI layout
+CRITERIA_DESCRIPTIONS = {
+    "Criterion 1": "No animal testing (Cruelty-free formulations).",
+    "Criterion 2": "No animal-derived ingredients (100% Vegan product line).",
+    "Criterion 3": "No connections to geopolitical entities undergoing active humanitarian boycott.",
+    "Criterion 4": "Independent ownership (Free from major multinational conglomerate ecosystems).",
+    "Criterion 5": "Production and sourcing footprints outside of mainland China markets.",
+    "Criterion 6": "Portfolio free of alcoholic beverage manufacturing (wine, beer, spirits).",
+    "Criterion 7": "Avoidance of large-scale e-commerce dominance retail networks.",
+    "Criterion 8": "Commitment to transparent, highly traceable independent supply chains.",
+    "Criterion 9": "No public tracking of vindictive, exclusionary or harmful actions toward company founders.",
+    "Criterion 10": "No high-sugar products like corporate sodas or mass candy lines in the broader portfolio."
+}
 
 st.set_page_config(page_title="Ethical Brand Scanner", layout="centered")
 
@@ -140,8 +154,16 @@ if st.button("Analyze Brand"):
                     st.subheader("Detailed Checklist Breakdown")
                     breakdown = result.get("breakdown", {})
                     for criterion, info in breakdown.items():
-                        with st.expander(f"{criterion}: {'✅ Pass' if info['status'] == 'Pass' else '❌ Fail'}"):
-                            st.write(info.get("details", ""))
+                        rule_text = CRITERIA_DESCRIPTIONS.get(criterion, "Ethical Metric Rule Check")
+                        
+                        # Use clean visual styles depending on pass or fail status
+                        if info['status'] == 'Pass':
+                            st.markdown(f"#### 🍏 {criterion}: Passed")
+                            st.info(f"**Requirement:** {rule_text}\n\n**Finding:** {info.get('details', '')}")
+                        else:
+                            st.markdown(f"#### 🍎 {criterion}: Failed")
+                            st.error(f"**Requirement:** {rule_text}\n\n**Finding:** {info.get('details', '')}")
+                        st.markdown("---")
                             
             except Exception as e:
                 st.error(f"An unexpected error occurred during execution: {e}")
