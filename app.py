@@ -38,7 +38,7 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
         "Criterion 1": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 2": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 3": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 4": {"status": "Pass" or "Fail", "details": "Explanation"},
+        "Criterion 4": {"status": "Pass" or "Fail", "explanation"},
         "Criterion 5": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 6": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 7": {"status": "Pass" or "Fail", "details": "Explanation"},
@@ -51,19 +51,19 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
 
 # Dictionary to dynamically display the clear criteria rules in the UI layout
 CRITERIA_DESCRIPTIONS = {
-    "Criterion 1": "No animal testing (Cruelty-free formulations).",
-    "Criterion 2": "No animal-derived ingredients (100% Vegan product line).",
-    "Criterion 3": "No connections to geopolitical entities undergoing active humanitarian boycott.",
-    "Criterion 4": "Independent ownership (Free from major multinational conglomerate ecosystems).",
-    "Criterion 5": "Production and sourcing footprints outside of mainland China markets.",
-    "Criterion 6": "Portfolio free of alcoholic beverage manufacturing (wine, beer, spirits).",
-    "Criterion 7": "Avoidance of large-scale e-commerce dominance retail networks.",
-    "Criterion 8": "Commitment to transparent, highly traceable independent supply chains.",
-    "Criterion 9": "No public tracking of vindictive, exclusionary or harmful actions toward company founders.",
-    "Criterion 10": "No high-sugar products like corporate sodas or mass candy lines in the broader portfolio."
+    "Criterion 1": "No animal testing (Cruelty-free formulations)",
+    "Criterion 2": "No animal-derived ingredients (100% Vegan line)",
+    "Criterion 3": "No connections to active geopolitical boycotts",
+    "Criterion 4": "Independent ownership (Free from major conglomerates)",
+    "Criterion 5": "Production and sourcing outside of mainland China",
+    "Criterion 6": "Portfolio free of alcoholic beverage manufacturing",
+    "Criterion 7": "Avoidance of e-commerce dominance retail networks",
+    "Criterion 8": "Commitment to transparent, traceable supply chains",
+    "Criterion 9": "No tracking of vindictive actions toward founders",
+    "Criterion 10": "No corporate sodas or mass candy lines in portfolio"
 }
 
-st.set_page_config(page_title="Ethical Brand Scanner", layout="centered")
+st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
 st.markdown("### 🇵🇸 **Stop the Genocide**")
 st.title("🛡️ Ethical Brand & Product Scanner")
@@ -152,18 +152,20 @@ if st.button("Analyze Brand"):
                     st.write(result.get("summary", "No corporate summary provided."))
                     
                     st.subheader("Detailed Checklist Breakdown")
+                    
+                    # Constructing a high-density Markdown table to fit everything on one screen
+                    table_markdown = "| Metric | Status | Ethical Requirement | Audit Finding |\n"
+                    table_markdown += "| :--- | :--- | :--- | :--- |\n"
+                    
                     breakdown = result.get("breakdown", {})
                     for criterion, info in breakdown.items():
                         rule_text = CRITERIA_DESCRIPTIONS.get(criterion, "Ethical Metric Rule Check")
+                        status_icon = "🍏 Pass" if info['status'] == 'Pass' else "🍎 Fail"
+                        finding_text = info.get('details', '').replace('\n', ' ')
                         
-                        # Use clean visual styles depending on pass or fail status
-                        if info['status'] == 'Pass':
-                            st.markdown(f"#### 🍏 {criterion}: Passed")
-                            st.info(f"**Requirement:** {rule_text}\n\n**Finding:** {info.get('details', '')}")
-                        else:
-                            st.markdown(f"#### 🍎 {criterion}: Failed")
-                            st.error(f"**Requirement:** {rule_text}\n\n**Finding:** {info.get('details', '')}")
-                        st.markdown("---")
+                        table_markdown += f"| **{criterion}** | {status_icon} | {rule_text} | {finding_text} |\n"
+                    
+                    st.markdown(table_markdown)
                             
             except Exception as e:
                 st.error(f"An unexpected error occurred during execution: {e}")
