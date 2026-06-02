@@ -19,7 +19,7 @@ st.html("""
     </style>
 """)
 
-# 4. Secure Key Retrieval (Reads from Streamlit Cloud Secrets)
+# 4. Secure Key Retrieval
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
@@ -40,7 +40,15 @@ OUTPUT: Return a valid JSON object ONLY.
     "summary": "State the ultimate parent company clearly and why it passed/failed.",
     "breakdown": {
         "Criterion 1": {"status": "Pass" or "Fail", "details": "..."},
-        ... (1 to 10)
+        "Criterion 2": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 3": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 4": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 5": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 6": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 7": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 8": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 9": {"status": "Pass" or "Fail", "details": "..."},
+        "Criterion 10": {"status": "Pass" or "Fail", "details": "..."}
     }
 }
 """
@@ -65,14 +73,16 @@ with st.form(key="search_form"):
 
 if submit and query:
     with st.spinner(f"Auditing '{query}'..."):
+        # Live Discovery Search
         tavily_payload = {
             "api_key": TAVILY_API_KEY,
             "query": f"Who is the ultimate parent company of {query}? Recent acquisitions by conglomerates? Ownership structure and ethical controversies.",
             "search_depth": "advanced"
         }
         search_res = requests.post("https://api.tavily.com/search", json=tavily_payload).json()
-        context = search_res.get("answer", "") + "\n" + "\n".join([r["content"] for r in search_res.get("results", [])])
+        context = search_res.get("answer", "") + "\n" + "\n".join([r.get("content", "") for r in search_res.get("results", [])])
 
+        # AI Audit
         llm_payload = {
             "model": "llama-3.3-70b-versatile",
             "messages": [
@@ -83,18 +93,27 @@ if submit and query:
             "temperature": 0.0
         }
         response = requests.post("https://api.groq.com/openai/v1/chat/completions", 
-                                 headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, json=llm_payload).json()
+                                 headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, json=llm_payload)
         
-        result = json.loads(response["choices"][0]["message"]["content"])
+        response_data = response.json()
         
-        status_text = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
-        st.markdown(f"**Results for: {query.upper()}** | **Status: {status_text}**")
-        st.markdown(f"**Corporate Context:** {result.get('summary', '')}")
-        
-        table = "| Metric | Status | Ethical Requirement | Audit Finding |\n| :--- | :--- | :--- | :--- |\n"
-        for i in range(1, 11):
-            crit = f"Criterion {i}"
-            info = result["breakdown"].get(crit, {"status": "Fail", "details": "N/A"})
-            status_icon = "🍏 Pass" if info['status'].strip().lower() in ['pass', 'passed'] else "🍎 Fail"
-            table += f"| **{crit}** | {status_icon} | {CRITERIA_DESCRIPTIONS[crit]} | {info['details']} |\n"
-        st.markdown(table)
+        if "error" in response_data:
+            st.error(f"API Error: {response_data['error'].get('message', 'Unknown error')}")
+        else:
+            try:
+                content = response_data["choices"][0]["message"]["content"]
+                result = json.loads(content)
+                
+                status_text = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
+                st.markdown(f"**Results for: {query.upper()}** | **Status: {status_text}**")
+                st.markdown(f"**Corporate Context:** {result.get('summary', '')}")
+                
+                table = "| Metric | Status | Ethical Requirement | Audit Finding |\n| :--- | :--- | :--- | :--- |\n"
+                for i in range(1, 11):
+                    crit = f"Criterion {i}"
+                    info = result["breakdown"].get(crit, {"status": "Fail", "details": "N/A"})
+                    status_icon = "🍏 Pass" if info['status'].strip().lower() in ['pass', 'passed'] else "🍎 Fail"
+                    table += f"| **{crit}** | {status_icon} | {CRITERIA_DESCRIPTIONS[crit]} | {info['details']} |\n"
+                st.markdown(table)
+            except Exception as e:
+                st.error(f"Failed to parse API response: {e}")
