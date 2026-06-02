@@ -2,12 +2,22 @@ import streamlit as st
 import requests
 import json
 
-st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
+# 1. Page Configuration
+st.set_page_config(page_title="Ethical Brand Scanner", layout="centered")
 
-st.markdown("##### 🇵🇸 **Stop the Genocide**")
-st.markdown("### 🛡️ Ethical Brand & Product Scanner")
+# 2. Centering & Layout CSS
+st.markdown("""
+    <style>
+        .main .block-container { max-width: 800px !important; padding-top: 1rem !important; }
+        .stTextInput { text-align: center; }
+        table { width: 100% !important; font-size: 12px !important; }
+        .reportview-container .main .block-container { display: flex; flex-direction: column; align-items: center; }
+    </style>
+""", unsafe_allow_html=True)
 
-# Load API keys from secrets
+st.markdown("<h5 style='text-align: center;'>🇵🇸 Stop the Genocide</h5>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center;'>🛡️ Ethical Brand & Product Scanner</h3>", unsafe_allow_html=True)
+
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
@@ -16,33 +26,33 @@ except KeyError:
     st.stop()
 
 CRITERIA_DESCRIPTIONS = {
-    "Criterion 1": "No animal testing — no sales in China or anywhere testing is required",
-    "Criterion 2": "100% vegan ingredients — no honey, beeswax, lanolin etc.",
-    "Criterion 3": "No honey or bee-derived products in the portfolio",
-    "Criterion 4": "No meat products in the portfolio",
-    "Criterion 5": "No dairy products in the portfolio",
-    "Criterion 6": "No fish products in the portfolio",
-    "Criterion 7": "No alcohol beverages in the portfolio (wine, beer, spirits — not cosmetic alcohol)",
-    "Criterion 8": "No ties to Israel",
-    "Criterion 9": "No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities",
-    "Criterion 10": "No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery)"
+    f"Criterion {i}": desc for i, desc in enumerate([
+        "No animal testing/China", "100% vegan", "No honey", "No meat", 
+        "No dairy", "No fish", "No alcohol", "No ties to Israel", 
+        "No harmful behavior", "No sugary products"
+    ], 1)
 }
 
-query = st.text_input("Enter Brand or Product Name:")
-if st.button("Analyze") and query:
+with st.form(key="search_input_form"):
+    query = st.text_input("Enter Brand or Product Name:", placeholder="Type and press Enter...")
+    submit_button = st.form_submit_button(label="Analyze")
+
+if (submit_button or query) and query:
     with st.spinner("Auditing..."):
         # Discovery
-        payload = {"api_key": TAVILY_API_KEY, "query": f"Parent company of {query}? Acquisitions? Ethical controversies regarding China, Israel, veganism, and subsidiaries.", "search_depth": "advanced"}
+        payload = {"api_key": TAVILY_API_KEY, "query": f"parent company of {query} and ethical controversies", "search_depth": "advanced"}
         resp = requests.post("https://api.tavily.com/search", json=payload)
         context = ""
-        if resp.status_code == 200:
-            res = resp.json()
-            if isinstance(res, dict):
-                context = str(res.get("answer", "")) + "\n" + "\n".join([r.get("content", "") for r in res.get("results", [])])
+        if resp.status_code == 200 and isinstance(resp.json(), dict):
+            context = str(resp.json().get("answer", "")) + "\n" + "\n".join([r.get("content", "") for r in resp.json().get("results", [])])
 
-        # Audit
-        prompt = """Audit against 10 criteria: 1. No animal testing/China. 2. 100% vegan. 3. No honey. 4. No meat. 5. No dairy. 6. No fish. 7. No alcohol. 8. No ties to Israel. 9. No harmful behavior. 10. No sugary products.
-        Return JSON exactly: {"status": "PASSED" or "FAILED", "summary": "...", "breakdown": {"Criterion 1": {"status": "Pass/Fail", "details": "..."}, ...}}"""
+        # Updated Prompt with Parent Company requirement
+        prompt = """Return JSON exactly: {
+            "parent_company": "Name of the ultimate parent company",
+            "status": "PASSED" or "FAILED",
+            "summary": "Brief analysis",
+            "breakdown": {"Criterion 1": {"status": "Pass/Fail", "details": "..."}, ...}
+        }"""
         
         llm_payload = {
             "model": "llama-3.3-70b-versatile",
@@ -54,17 +64,17 @@ if st.button("Analyze") and query:
         
         if resp_llm.status_code == 200:
             result = json.loads(resp_llm.json()["choices"][0]["message"]["content"])
-            status_display = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
-            st.markdown(f"**Results for: {query.upper()} | Status: {status_display}**")
-            st.markdown(f"**Corporate Context:** {result.get('summary')}")
             
-            # Recreate the table
-            table = "| Metric | Status | Ethical Requirement | Audit Finding |\n| :--- | :--- | :--- | :--- |\n"
+            # Displaying Parent Company clearly
+            st.markdown(f"**Results for: {query.upper()}**")
+            st.markdown(f"**Parent Company:** {result.get('parent_company', 'Unknown')}")
+            st.markdown(f"**Status:** {result.get('status')}")
+            st.caption(f"**Context:** {result.get('summary')}")
+            
+            table = "| Metric | Status | Requirement | Finding |\n|:---|:---|:---|:---|\n"
             for i in range(1, 11):
                 c = f"Criterion {i}"
-                item = result["breakdown"].get(c, {"status": "Fail", "details": "N/A"})
-                icon = "🍏 Pass" if "pass" in item['status'].lower() else "🍎 Fail"
+                item = result.get("breakdown", {}).get(c, {"status": "Fail", "details": "N/A"})
+                icon = "🍏" if "pass" in str(item['status']).lower() else "🍎"
                 table += f"| **{c}** | {icon} | {CRITERIA_DESCRIPTIONS[c]} | {item['details']} |\n"
             st.markdown(table)
-        else:
-            st.error("Audit API call failed.")
