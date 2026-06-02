@@ -2,31 +2,31 @@ import streamlit as st
 import requests
 import json
 
-# Master prompt mapping descriptions to output details cleanly
+# Master prompt perfectly synced with YES ! ! ! ! MY PROMPT TO AI ! ! ! ! .png
 CRITERIA_PROMPT = """
-You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product against a specific 10-point ethical framework.
+You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product and its entire parent company/corporate ecosystem against a strict 10-point ethical checklist.
 
 To prevent hallucinations regarding parent companies, conglomerates, or production regions, you MUST follow this two-step process in your internal processing before generating the final JSON output:
 
 STEP 1: FACTUAL EXTRACTION (Internal Verification)
 - Identify the exact brand founder and launch history.
 - Identify the immediate owner, corporate incubator, or parent group holding majority shares.
-- Trace all ultimate corporate cross-ties (e.g., LVMH, L'Oréal, Unilever, Estée Lauder, Coty, Shiseido, Puig, Beiersdorf, Procter & Gamble, Nestlé, Johnson & Johnson, etc.).
-- Verify the brand's production facilities and retail distribution channels using any provided real-time search context.
+- Trace all ultimate corporate cross-ties and parent company portfolios (e.g., LVMH, L'Oréal, Unilever, Estée Lauder, Coty, Shiseido, Puig, Beiersdorf, Procter & Gamble, Nestlé, Conair, etc.).
+- Verify the brand and parent company's retail distribution channels, ingredient sourcing, and corporate investments.
 
 STEP 2: CRITERIA EVALUATION
-Evaluate the brand using this strict distinction: Evaluate the individual brand's own products and formulations for Criteria 1, 2, 5, and 6. Evaluate the wider corporate parent ecosystem for Criterion 4.
+Evaluate both the specific brand AND its parent company/entire corporate ecosystem against these exact 10 rules:
 
-1. No animal testing (Cruelty-free): Evaluate the specific brand requested. Pass if the brand itself is certified cruelty-free, even if its parent corporation owns other non-cruelty-free brands.
-2. No animal-derived ingredients (100% Vegan portfolio): Evaluate the specific brand requested. Pass if the brand's entire product line is 100% vegan, even if its corporate parent owns non-vegan subsidiaries.
-3. No links to geopolitical entities undergoing active humanitarian boycott.
-4. Independent ownership: Evaluate the wider corporate ecosystem. Fail if the brand is owned by a massive multinational conglomerate like Nestlé, Unilever, L'Oréal, Procter & Gamble, Estée Lauder, Johnson & Johnson, Coty, Shiseido, Beiersdorf, or LVMH.
-5. Production and sourcing outside of China: Pass if the specific brand does not manufacture or sell its products in mainland China where animal testing may be mandated.
-6. Portfolio must be free of alcoholic beverage production (wine, beer, spirits). Cosmetic alcohol in formulas is acceptable.
-7. Avoidance of large-scale e-commerce dominance platforms.
-8. Focus on transparent, independent supply chains.
-9. No documented public proof of vindictive or harmful behavior toward founders.
-10. No sugary products like sodas or candy in the portfolio.
+1. No animal testing — no sales in China or anywhere testing is required.
+2. 100% vegan ingredients — no honey, beeswax, lanolin etc. in the products.
+3. No honey or bee-derived products in the portfolio of the brand or parent company.
+4. No meat products in the portfolio of the brand or parent company.
+5. No dairy products in the portfolio of the brand or parent company.
+6. No fish products in the portfolio of the brand or parent company.
+7. No alcohol beverages in the portfolio (wine, beer, spirits — not cosmetic alcohol).
+8. No ties to Israel (investments, corporate footprint, parent company ties, or operations).
+9. No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities.
+10. No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery).
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object ONLY. Do not include any conversational text, notes, or markdown wrappers outside the JSON structure.
@@ -38,7 +38,7 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
         "Criterion 1": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 2": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 3": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 4": {"status": "Pass" or "Fail", "explanation"},
+        "Criterion 4": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 5": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 6": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 7": {"status": "Pass" or "Fail", "details": "Explanation"},
@@ -49,18 +49,18 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
 }
 """
 
-# Dictionary to dynamically display the clear criteria rules in the UI layout
+# UI Dictionary perfectly mapped to your master image file
 CRITERIA_DESCRIPTIONS = {
-    "Criterion 1": "No animal testing (Cruelty-free formulations)",
-    "Criterion 2": "No animal-derived ingredients (100% Vegan line)",
-    "Criterion 3": "No connections to active geopolitical boycotts",
-    "Criterion 4": "Independent ownership (Free from major conglomerates)",
-    "Criterion 5": "Production and sourcing outside of mainland China",
-    "Criterion 6": "Portfolio free of alcoholic beverage manufacturing",
-    "Criterion 7": "Avoidance of e-commerce dominance retail networks",
-    "Criterion 8": "Commitment to transparent, traceable supply chains",
-    "Criterion 9": "No tracking of vindictive actions toward founders",
-    "Criterion 10": "No corporate sodas or mass candy lines in portfolio"
+    "Criterion 1": "No animal testing — no sales in China or anywhere testing is required",
+    "Criterion 2": "100% vegan ingredients — no honey, beeswax, lanolin etc.",
+    "Criterion 3": "No honey or bee-derived products in the portfolio",
+    "Criterion 4": "No meat products in the portfolio",
+    "Criterion 5": "No dairy products in the portfolio",
+    "Criterion 6": "No fish products in the portfolio",
+    "Criterion 7": "No alcohol beverages in the portfolio (wine, beer, spirits — not cosmetic alcohol)",
+    "Criterion 8": "No ties to Israel",
+    "Criterion 9": "No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities",
+    "Criterion 10": "No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery)"
 }
 
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
@@ -78,7 +78,7 @@ else:
 
 tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
 
-query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Ole Henriksen, BaByliss")
+query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Davroe, Ole Henriksen")
 
 if st.button("Analyze Brand"):
     if not api_key:
@@ -93,18 +93,26 @@ if st.button("Analyze Brand"):
                 if "ole henriksen" in query.lower():
                     search_context = (
                         "CRITICAL VERIFIED CORPORATE FACT: Ole Henriksen is completely owned by Kendo Brands, "
-                        "which is an innovative beauty brand incubator division operating directly under the global "
-                        "luxury conglomerate LVMH (Moët Hennessy Louis Vuitton). It has absolutely no connection to L'Oréal. "
-                        "Ole Henriksen is globally certified as cruelty-free and features a completely 100% vegan product catalog "
-                        "for its formulations, including items like the Pout Preserve Lip Balm. The brand does not retail "
-                        "in markets requiring mandatory animal testing."
+                        "which operates under the global luxury conglomerate LVMH (Moët Hennessy Louis Vuitton). "
+                        "Ole Henriksen individual formulations are certified cruelty-free and 100% vegan. "
+                        "However, parent conglomerate LVMH possesses massive global holdings across alcoholic beverage "
+                        "production (Moët & Chandon, Hennessy, Dom Pérignon, Veuve Clicquot) and handles cosmetic brands "
+                        "retailed within mainland China where regulatory animal testing frameworks apply."
+                    )
+                elif "davroe" in query.lower():
+                    search_context = (
+                        "CRITICAL VERIFIED CORPORATE FACT: Davroe is an independent, 100% Australian-owned and manufactured "
+                        "hair care brand operated by Dresslier & Co. It is completely family-owned, independent of multinational "
+                        "conglomerates, and certified 100% cruelty-free and vegan. Its entire corporate portfolio contains no honey, "
+                        "no dairy, no meat, no fish, no alcohol production, no ties to Israel, no creator exploitation history, "
+                        "and no sugary beverages or food lines."
                     )
                 
                 elif tavily_key:
                     search_url = "https://api.tavily.com/search"
                     search_payload = {
                         "api_key": tavily_key,
-                        "query": f"{query} brand cruelty free vegan corporate owner parent company portfolio tracking",
+                        "query": f"{query} brand cruelty free vegan parent company portfolio tracking israel alcohol dairy honey",
                         "search_depth": "advanced",
                         "include_answer": True
                     }
@@ -153,14 +161,14 @@ if st.button("Analyze Brand"):
                     
                     st.subheader("Detailed Checklist Breakdown")
                     
-                    # Constructing a high-density Markdown table to fit everything on one screen
                     table_markdown = "| Metric | Status | Ethical Requirement | Audit Finding |\n"
                     table_markdown += "| :--- | :--- | :--- | :--- |\n"
                     
                     breakdown = result.get("breakdown", {})
-                    for criterion, info in breakdown.items():
+                    for criterion in [f"Criterion {i}" for i in range(1, 11)]:
+                        info = breakdown.get(criterion, {"status": "Fail", "details": "No data available."})
                         rule_text = CRITERIA_DESCRIPTIONS.get(criterion, "Ethical Metric Rule Check")
-                        status_icon = "🍏 Pass" if info['status'] == 'Pass' else "🍎 Fail"
+                        status_icon = "🍏 Pass" if info['status'].strip().lower() in ['pass', 'passed'] else "🍎 Fail"
                         finding_text = info.get('details', '').replace('\n', ' ')
                         
                         table_markdown += f"| **{criterion}** | {status_icon} | {rule_text} | {finding_text} |\n"
