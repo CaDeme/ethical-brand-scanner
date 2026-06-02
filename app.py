@@ -2,38 +2,34 @@ import streamlit as st
 import requests
 import json
 
-# Force wide page structure and configure basic frame settings first
+# 1. Page Configuration first
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-# Safe HTML layout injector to remove vertical margins and keep the data ultra-tight
+# 2. FIXED STATIC HEADERS (Using standard markdown so Streamlit cannot drop them)
+st.markdown("##### 🇵🇸 **Stop the Genocide**")
+st.markdown("### 🛡️ Ethical Brand & Product Scanner")
+
+# 3. CSS Layout Injection
 st.html(
     """
     <style>
-        .block-container { padding-top: 0.4rem !important; padding-bottom: 0rem !important; }
+        .block-container { padding-top: 0.2rem !important; padding-bottom: 0rem !important; }
         div[data-testid="stForm"] { padding: 0.1rem !important; margin-bottom: 0.2rem !important; border: none !important; }
         
-        /* Clear form notification messages and clean up the input field structure */
+        /* Remove the 'Press Enter to submit form' text hint and clean focus colors */
         div[data-testid="stFormHint"] { display: none !important; }
         .stTextInput div[data-baseweb="input"] { border-radius: 4px !important; }
         
-        /* Visually hide the internal submit button to save maximum vertical spacing */
+        /* Hide the native form submit button to maintain layout integrity */
         div[data-testid="stFormSubmitButton"] { display: none !important; }
         
         table { width: 100% !important; font-size: 12.5px !important; }
         th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
-        hr { margin: 0.3rem 0 !important; }
+        hr { margin: 0.2rem 0 !important; }
         p, span { margin-bottom: 1px !important; }
-        
-        /* Permanent style formatting for our custom header block */
-        .banner-text { font-size: 16px !important; font-weight: bold !important; margin-bottom: 8px !important; display: block; }
-        .header-text { font-size: 24px !important; font-weight: bold !important; margin-top: 0px !important; margin-bottom: 12px !important; }
     </style>
     """
 )
-
-# FIXED STATIC HTML HEADERS: Injected directly into DOM so emojis bypass LLM/markdown filters
-st.html('<span class="banner-text">&#127477;&#127480; <b>Stop the Genocide</b></span>')
-st.html('<div class="header-text">&#128737;&#65039; Ethical Brand & Product Scanner</div>')
 
 # Master prompt perfectly synced with your 10-point checklist rules
 CRITERIA_PROMPT = """
@@ -107,12 +103,12 @@ else:
 
 tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
 
-# Form uses keyboard 'Enter' submission natively without showing a physical button
+# Form setup mapping the keyboard input focus
 with st.form(key="search_form", clear_on_submit=False):
     query = st.text_input("Enter Brand or Product Name:", placeholder="Type brand name and press Enter...")
     submit_button = st.form_submit_button(label="Analyze")
 
-# Separate execution block so structural components above never vanish during re-renders
+# Separate execution condition evaluated dynamically
 if query:
     if not api_key:
         st.error("Please provide a Groq API Key to proceed.")
@@ -120,8 +116,10 @@ if query:
         with st.spinner(f"Auditing '{query}'..."):
             try:
                 search_context = ""
+                clean_query = query.lower().strip()
                 
-                if "ole henriksen" in query.lower():
+                # FIXED LOGIC: Catches partial input searches like "ole" or "ole henriksen" cleanly
+                if clean_query in "ole henriksen" or "ole" in clean_query:
                     search_context = (
                         "CRITICAL VERIFIED CORPORATE FACT: Ole Henriksen is completely owned by Kendo Brands, "
                         "which operates under the global luxury conglomerate LVMH (Moët Hennessy Louis Vuitton). "
@@ -130,7 +128,7 @@ if query:
                         "production (Moët & Chandon, Hennessy, Dom Pérignon, Veuve Clicquot) and handles cosmetic brands "
                         "retailed within mainland China where regulatory animal testing frameworks apply."
                     )
-                elif "davroe" in query.lower():
+                elif "davroe" in clean_query:
                     search_context = (
                         "CRITICAL VERIFIED CORPORATE FACT: Davroe is an independent, 100% Australian-owned and manufactured "
                         "hair care brand operated by Dresslier & Co. It is completely family-owned, independent of multinational "
