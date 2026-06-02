@@ -28,7 +28,7 @@ Evaluate both the specific brand AND its parent company/entire corporate ecosyst
 9. No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities.
 10. No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery).
 
-To help everything fit cleanly inside a single screen layout view without requiring scrolling, keep your explanations in the breakdown precise, compact, and factual.
+To ensure all rows completely fit within a single laptop screen snapshot without scrolling, keep your explanations in the breakdown precise, compact, and factual (under 15 words per row).
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object ONLY. Do not include any conversational text, notes, or markdown wrappers outside the JSON structure.
@@ -65,8 +65,26 @@ CRITERIA_DESCRIPTIONS = {
     "Criterion 10": "No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery)"
 }
 
-# Set wide layout to optimize horizontal screen space usage
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
+
+# Custom CSS Injector to optimize layout density for single screenshots
+st.markdown(
+    """
+    <style>
+        /* Reduce spacing between elements */
+        .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+        div[data-testid="stForm"] { padding: 0.5rem !important; margin-bottom: 0.5rem !important; }
+        .stTextInput { margin-bottom: -1rem !important; }
+        
+        /* Compress the data table style natively */
+        table { width: 100% !important; font-size: 13px !important; }
+        th, td { padding: 4px 6px !important; line-height: 1.2 !important; }
+        hr { margin: 0.5rem 0 !important; }
+        p, span { margin-bottom: 0.2rem !important; }
+    </style>
+    """,
+    unsafe_html=True
+)
 
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
 st.markdown("### 🛡️ Ethical Brand & Product Scanner")
@@ -80,7 +98,6 @@ else:
 
 tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
 
-# Using a native form structure enables "Press Enter to Submit" logic cleanly
 with st.form(key="search_form", clear_on_submit=False):
     query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Davroe, Ole Henriksen")
     submit_button = st.form_submit_button(label="Analyze Brand")
@@ -153,12 +170,10 @@ if submit_button:
                 else:
                     result = json.loads(response_data["choices"][0]["message"]["content"])
                     
-                    # Condensed display header markers to maximize vertical screen efficiency
                     status_text = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
                     st.markdown(f"**Results for: {query.upper()}** | **Status: {status_text}**")
                     st.markdown(f"**Corporate Context:** {result.get('summary', '')}")
                     
-                    # High-density evaluation data grid matching single screenshot specifications
                     table_markdown = "| Metric | Status | Ethical Requirement | Audit Finding |\n"
                     table_markdown += "| :--- | :--- | :--- | :--- |\n"
                     
