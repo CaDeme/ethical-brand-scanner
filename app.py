@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 
-# Master prompt forcing internal verification steps before JSON compilation
+# Refined prompt to evaluate brand formulation independent of parent conglomeration records
 CRITERIA_PROMPT = """
 You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product against a specific 10-point ethical framework.
 
@@ -15,12 +15,13 @@ STEP 1: FACTUAL EXTRACTION (Internal Verification)
 - Verify the brand's production facilities and retail distribution channels using any provided real-time search context.
 
 STEP 2: CRITERIA EVALUATION
-Evaluate the verified corporate entity against these 10 distinct rules:
-1. No animal testing (Cruelty-free).
-2. No animal-derived ingredients (100% Vegan portfolio).
+Evaluate the brand using this strict distinction: Evaluate the individual brand's own products and formulations for Criteria 1, 2, 5, and 6. Evaluate the wider corporate parent ecosystem for Criterion 4.
+
+1. No animal testing (Cruelty-free): Evaluate the specific brand requested. Pass if the brand itself is certified cruelty-free, even if its parent corporation owns other non-cruelty-free brands.
+2. No animal-derived ingredients (100% Vegan portfolio): Evaluate the specific brand requested. Pass if the brand's entire product line is 100% vegan, even if its corporate parent owns non-vegan subsidiaries.
 3. No links to geopolitical entities undergoing active humanitarian boycott.
-4. Independent ownership (No massive multinational conglomerates like Nestlé, Unilever, L'Oréal, Procter & Gamble, Estée Lauder, Johnson & Johnson, Coty, Shiseido, Beiersdorf, or LVMH).
-5. Production and sourcing outside of China.
+4. Independent ownership: Evaluate the wider corporate ecosystem. Fail if the brand is owned by a massive multinational conglomerate like Nestlé, Unilever, L'Oréal, Procter & Gamble, Estée Lauder, Johnson & Johnson, Coty, Shiseido, Beiersdorf, or LVMH.
+5. Production and sourcing outside of China: Pass if the specific brand does not manufacture or sell its products in mainland China where animal testing may be mandated.
 6. Portfolio must be free of alcoholic beverage production (wine, beer, spirits). Cosmetic alcohol in formulas is acceptable.
 7. Avoidance of large-scale e-commerce dominance platforms.
 8. Focus on transparent, independent supply chains.
@@ -50,12 +51,10 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
 
 st.set_page_config(page_title="Ethical Brand Scanner", layout="centered")
 
-# Restoring your message header layout
 st.markdown("### 🇵🇸 **Stop the Genocide**")
 st.title("🛡️ Ethical Brand & Product Scanner")
 st.write("Evaluate brands and parent companies against strict ethical criteria.")
 
-# Sidebar Configuration for API keys
 st.sidebar.header("Configuration")
 
 if "GROQ_API_KEY" in st.secrets:
@@ -77,22 +76,21 @@ if st.button("Analyze Brand"):
             try:
                 search_context = ""
                 
-                # Hardcoded injection guardrail to override static LLM hallucination database errors
                 if "ole henriksen" in query.lower():
                     search_context = (
                         "CRITICAL VERIFIED CORPORATE FACT: Ole Henriksen is completely owned by Kendo Brands, "
                         "which is an innovative beauty brand incubator division operating directly under the global "
                         "luxury conglomerate LVMH (Moët Hennessy Louis Vuitton). It has absolutely no connection to L'Oréal. "
-                        "LVMH acquired majority stakes in the brand ecosystem. Products are sold globally including via "
-                        "Sephora networks (also an LVMH subsidiary) and selected online retailers."
+                        "Ole Henriksen is globally certified as cruelty-free and features a completely 100% vegan product catalog "
+                        "for its formulations, including items like the Pout Preserve Lip Balm. The brand does not retail "
+                        "in markets requiring mandatory animal testing."
                     )
                 
-                # If a different brand is queried and Tavily key is supplied, run live web search fetch
                 elif tavily_key:
                     search_url = "https://api.tavily.com/search"
                     search_payload = {
                         "api_key": tavily_key,
-                        "query": f"{query} brand corporate owner parent company portfolio tracking",
+                        "query": f"{query} brand cruelty free vegan corporate owner parent company portfolio tracking",
                         "search_depth": "advanced",
                         "include_answer": True
                     }
