@@ -18,7 +18,7 @@ def reset_app():
     st.session_state.context = ""
     st.session_state.audit_result = None
 
-query = st.text_input("Enter Brand Name:")
+query = st.text_input("Enter Brand Name:", key="brand_input")
 
 # 2. Logic Pipeline
 if query:
@@ -27,7 +27,7 @@ if query:
             try:
                 payload = {
                     "api_key": st.secrets["TAVILY_API_KEY"], 
-                    "query": f"Ultimate parent company of {query}, subsidiaries, China/Israel ties, alcohol/meat/dairy portfolio.",
+                    "query": f"Analyze {query} corporate structure, parent company, and ethical footprint regarding animal testing, China, Israel, alcohol, meat, dairy, fish, and vindictive behavior.",
                     "search_depth": "advanced"
                 }
                 resp = requests.post("https://api.tavily.com/search", json=payload)
@@ -39,12 +39,19 @@ if query:
 
 if st.session_state.step == 2 and st.session_state.context:
     with st.spinner("Applying ethical audit..."):
-        prompt = """You are a strict JSON-only API. Audit the brand based on this context: {context}.
-        Check against these 10 criteria. Return ONLY valid JSON with fields: 'status', 'parent_company', 'breakdown'."""
+        # UPDATED: Force-Chain Prompt to prevent "Data unavailable"
+        prompt = """You are an expert ethical auditor. Audit the brand based on the following context: {context}.
+        You MUST evaluate these 10 criteria. If information is ambiguous, use the parent company's general activities to determine the status.
+        Criteria: 1. No animal testing/no China sales. 2. 100% vegan. 3. No honey/bee. 4. No meat. 5. No dairy. 6. No fish. 
+        7. No alcohol beverages (not cosmetic). 8. No ties to Israel. 9. No public proof of vindictive behavior. 10. No sugary products.
+        
+        Return ONLY a strict JSON object with these keys: 
+        {"status": "PASSED/FAILED", "parent_company": "...", "breakdown": {"Criterion 1": {"status": "...", "details": "..."}, ...}}"""
+        
         try:
             llm_payload = {
                 "model": "llama-3.3-70b-versatile",
-                "messages": [{"role": "system", "content": prompt.format(context=st.session_state.context)}, {"role": "user", "content": "Execute audit."}],
+                "messages": [{"role": "system", "content": prompt.format(context=st.session_state.context)}, {"role": "user", "content": "Analyze and audit now."}],
                 "response_format": {"type": "json_object"}
             }
             resp_llm = requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {st.secrets['GROQ_API_KEY']}"}, json=llm_payload)
@@ -52,12 +59,12 @@ if st.session_state.step == 2 and st.session_state.context:
             if resp_llm.status_code == 200:
                 content = resp_llm.json()["choices"][0]["message"]["content"]
                 res = json.loads(content)
-                if 'status' in res and 'breakdown' in res:
+                if 'breakdown' in res:
                     st.session_state.audit_result = res
                     st.session_state.step = 3
                     st.rerun()
                 else:
-                    st.error("Audit failed: Invalid JSON structure.")
+                    st.error("Audit returned invalid structure. Retrying...")
         except Exception as e:
             st.error(f"Audit failed: {e}")
 
@@ -67,14 +74,12 @@ if st.session_state.step == 3 and st.session_state.audit_result:
     st.success("Audit Complete")
     st.write(f"**Parent Company:** {res.get('parent_company', 'Unknown')}")
     
-    # DEFENSIVE LOOP: Ensures 'data' is always a dictionary
-    for criterion, data in res.get("breakdown", {}).items():
-        if isinstance(data, dict):
-            status_text = str(data.get('status', 'fail')).lower()
-            icon = "🍏" if "pass" in status_text else "🍎"
-            details = data.get('details', 'N/A')
-            st.write(f"{icon} **{criterion}**: {details}")
-        else:
-            st.write(f"🍎 **{criterion}**: Data unavailable.")
+    # Iterate specifically through the 10 criteria
+    for i in range(1, 11):
+        c_key = f"Criterion {i}"
+        data = res.get("breakdown", {}).get(c_key, {"status": "Fail", "details": "No evidence found."})
+        status_text = str(data.get('status', '')).lower()
+        icon = "🍏" if "pass" in status_text else "🍎"
+        st.write(f"{icon} **{c_key}**: {data.get('details', 'No evidence found.')}")
             
     st.button("New Scan", on_click=reset_app)
