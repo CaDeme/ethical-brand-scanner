@@ -2,6 +2,35 @@ import streamlit as st
 import requests
 import json
 
+# Force wide page structure and configure basic frame settings first
+st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
+
+# Safe HTML layout injector to remove vertical margins and keep the data ultra-tight
+st.html(
+    """
+    <style>
+        .block-container { padding-top: 0.4rem !important; padding-bottom: 0rem !important; }
+        div[data-testid="stForm"] { padding: 0.1rem !important; margin-bottom: 0.2rem !important; border: none !important; }
+        
+        /* Clear form notification messages and clean up the input field structure */
+        div[data-testid="stFormHint"] { display: none !important; }
+        .stTextInput div[data-baseweb="input"] { border-radius: 4px !important; }
+        
+        /* Visually hide the internal submit button to save maximum vertical spacing */
+        div[data-testid="stFormSubmitButton"] { display: none !important; }
+        
+        table { width: 100% !important; font-size: 12.5px !important; }
+        th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
+        hr { margin: 0.3rem 0 !important; }
+        p, span { margin-bottom: 1px !important; }
+    </style>
+    """
+)
+
+# FIXED STATIC HEADERS: Placed here at the absolute top so they never disappear
+st.markdown("##### 🇵🇸 **Stop the Genocide**")
+st.markdown("### 🛡️ Ethical Brand & Product Scanner")
+
 # Master prompt perfectly synced with your 10-point checklist rules
 CRITERIA_PROMPT = """
 You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product and its entire parent company/corporate ecosystem against a strict 10-point ethical checklist.
@@ -51,7 +80,7 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
 }
 """
 
-# UI Dictionary perfectly mapped to your master image file
+# UI Dictionary perfectly mapped to your master checklist rules
 CRITERIA_DESCRIPTIONS = {
     "Criterion 1": "No animal testing — no sales in China or anywhere testing is required",
     "Criterion 2": "100% vegan ingredients — no honey, beeswax, lanolin etc.",
@@ -65,34 +94,6 @@ CRITERIA_DESCRIPTIONS = {
     "Criterion 10": "No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery)"
 }
 
-st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
-
-# Safe HTML layout injector to remove vertical margins and clean form styling
-st.html(
-    """
-    <style>
-        .block-container { padding-top: 0.5rem !important; padding-bottom: 0rem !important; }
-        div[data-testid="stForm"] { padding: 0.1rem !important; margin-bottom: 0.2rem !important; border: none !important; }
-        
-        /* Hide the redundant 'Press Enter to submit form' message and eliminate red highlight border */
-        div[data-testid="stFormHint"] { display: none !important; }
-        .stTextInput div[data-baseweb="input"] { border-radius: 4px !important; }
-        
-        /* Hide the submit button inside the form visually to save space */
-        div[data-testid="stFormSubmitButton"] { display: none !important; }
-        
-        table { width: 100% !important; font-size: 12.5px !important; }
-        th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
-        hr { margin: 0.3rem 0 !important; }
-        p, span { margin-bottom: 1px !important; }
-    </style>
-    """
-)
-
-# Render headers completely static outside of any form execution block
-st.markdown("##### 🇵🇸 **Stop the Genocide**")
-st.markdown("### 🛡️ Ethical Brand & Product Scanner")
-
 st.sidebar.header("Configuration")
 
 if "GROQ_API_KEY" in st.secrets:
@@ -102,13 +103,13 @@ else:
 
 tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
 
-# Form uses keyboard 'Enter' submission natively without needing a visible button
+# Form uses keyboard 'Enter' submission natively without showing a physical button
 with st.form(key="search_form", clear_on_submit=False):
     query = st.text_input("Enter Brand or Product Name:", placeholder="Type brand name and press Enter...")
     submit_button = st.form_submit_button(label="Analyze")
 
-# Separate execution condition cleanly so layout headers stay fixed above it
-if submit_button and query:
+# Separate execution block so structural components above never vanish during re-renders
+if query:
     if not api_key:
         st.error("Please provide a Groq API Key to proceed.")
     else:
