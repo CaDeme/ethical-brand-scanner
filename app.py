@@ -67,20 +67,29 @@ CRITERIA_DESCRIPTIONS = {
 
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-# Safe HTML layout injector to remove vertical margins for single screenshots
+# Safe HTML layout injector to remove vertical margins and clean form styling
 st.html(
     """
     <style>
         .block-container { padding-top: 0.5rem !important; padding-bottom: 0rem !important; }
-        div[data-testid="stForm"] { padding: 0.4rem !important; margin-bottom: 0.4rem !important; }
+        div[data-testid="stForm"] { padding: 0.2rem !important; margin-bottom: 0.4rem !important; border: none !important; }
+        
+        /* Hide the redundant 'Press Enter to submit form' message and eliminate red highlight border */
+        div[data-testid="stFormHint"] { display: none !important; }
+        .stTextInput div[data-baseweb="input"] { border-radius: 4px !important; }
+        
+        /* Hide the submit button inside the form visually to save space */
+        div[data-testid="stFormSubmitButton"] { display: none !important; }
+        
         table { width: 100% !important; font-size: 12.5px !important; }
         th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
         hr { margin: 0.4rem 0 !important; }
-        p, span { margin-bottom: 0.1rem !important; }
+        p, span { margin-bottom: 1px !important; }
     </style>
     """
 )
 
+# Display the message right above the clear main header
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
 st.markdown("### 🛡️ Ethical Brand & Product Scanner")
 
@@ -93,15 +102,15 @@ else:
 
 tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
 
+# Form uses keyboard 'Enter' submission natively without needing a visible button
 with st.form(key="search_form", clear_on_submit=False):
-    query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Davroe, Ole Henriksen")
-    submit_button = st.form_submit_button(label="Analyze Brand")
+    query = st.text_input("Enter Brand or Product Name:", placeholder="Type brand name and press Enter...")
+    submit_button = st.form_submit_button(label="Analyze")
 
-if submit_button:
+# Check if the text input field has a value entered when hitting Enter
+if query:
     if not api_key:
         st.error("Please provide a Groq API Key to proceed.")
-    elif not query:
-        st.warning("Please enter a brand name to analyze.")
     else:
         with st.spinner(f"Auditing '{query}'..."):
             try:
