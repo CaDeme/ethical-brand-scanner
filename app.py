@@ -23,13 +23,17 @@ st.html(
         th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
         hr { margin: 0.3rem 0 !important; }
         p, span { margin-bottom: 1px !important; }
+        
+        /* Permanent style formatting for our custom header block */
+        .banner-text { font-size: 16px !important; font-weight: bold !important; margin-bottom: 8px !important; display: block; }
+        .header-text { font-size: 24px !important; font-weight: bold !important; margin-top: 0px !important; margin-bottom: 12px !important; }
     </style>
     """
 )
 
-# FIXED STATIC HEADERS: Placed here at the absolute top so they never disappear
-st.markdown("##### 🇵🇸 **Stop the Genocide**")
-st.markdown("### 🛡️ Ethical Brand & Product Scanner")
+# FIXED STATIC HTML HEADERS: Injected directly into DOM so emojis bypass LLM/markdown filters
+st.html('<span class="banner-text">&#127477;&#127480; <b>Stop the Genocide</b></span>')
+st.html('<div class="header-text">&#128737;&#65039; Ethical Brand & Product Scanner</div>')
 
 # Master prompt perfectly synced with your 10-point checklist rules
 CRITERIA_PROMPT = """
