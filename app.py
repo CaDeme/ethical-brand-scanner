@@ -2,197 +2,119 @@ import streamlit as st
 import requests
 import json
 
-# 1. Page Configuration first
+# 1. Page Configuration
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-# 2. FIXED STATIC HEADERS (Using standard markdown without modified spacing)
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
 st.markdown("### 🛡️ Ethical Brand & Product Scanner")
 
-# 3. Safe CSS Layout Injection (Leaving vertical padding alone so text isn't hidden)
+# 2. CSS Injection
 st.html(
     """
     <style>
         div[data-testid="stForm"] { padding: 0.1rem !important; margin-bottom: 0.2rem !important; border: none !important; }
-        
-        /* Remove the 'Press Enter to submit form' text hint */
         div[data-testid="stFormHint"] { display: none !important; }
         .stTextInput div[data-baseweb="input"] { border-radius: 4px !important; }
-        
-        /* Hide the native form submit button visually */
         div[data-testid="stFormSubmitButton"] { display: none !important; }
-        
         table { width: 100% !important; font-size: 12.5px !important; }
         th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
-        hr { margin: 0.2rem 0 !important; }
-        p, span { margin-bottom: 1px !important; }
     </style>
     """
 )
 
-# Master prompt perfectly synced with your 10-point checklist rules
+# 3. Master Prompt with mandatory Discovery Step
 CRITERIA_PROMPT = """
-You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product and its entire parent company/corporate ecosystem against a strict 10-point ethical checklist.
+You are a forensic business analyst. You MUST perform a two-step analysis on the provided brand.
 
-To prevent hallucinations regarding parent companies, conglomerates, or production regions, you MUST follow this two-step process in your internal processing before generating the final JSON output:
+STEP 1: CORPORATE DISCOVERY
+Analyze the provided search records to identify:
+- Who is the absolute ultimate parent company? (Trace all subsidiaries up to the top conglomerate).
+- Has there been a recent acquisition by a major conglomerate (Unilever, L'Oréal, P&G, LVMH, etc.)?
 
-STEP 1: FACTUAL EXTRACTION (Internal Verification)
-- Identify the exact brand founder and launch history.
-- Identify the immediate owner, corporate incubator, or parent group holding majority shares.
-- Trace all ultimate corporate cross-ties and parent company portfolios (e.g., LVMH, L'Oréal, Unilever, Estée Lauder, Coty, Shiseido, Puig, Beiersdorf, Procter & Gamble, Nestlé, Conair, etc.).
-- Verify the brand and parent company's retail distribution channels, ingredient sourcing, and corporate investments.
+STEP 2: ETHICAL EVALUATION
+Evaluate the brand and its ULTIMATE PARENT COMPANY against these 10 criteria:
+1. No animal testing — no sales in China or markets requiring testing.
+2. 100% vegan ingredients — no honey, beeswax, lanolin.
+3. No honey/bee-derived products in the entire corporate portfolio.
+4. No meat products in the entire corporate portfolio.
+5. No dairy products in the entire corporate portfolio.
+6. No fish products in the entire corporate portfolio.
+7. No alcoholic beverages in the corporate portfolio.
+8. No ties to Israel (investments, operations, or footprint).
+9. No documented harmful/vindictive behavior by parent company toward founders/communities.
+10. No sugary products/confectionery in the corporate portfolio.
 
-STEP 2: CRITERIA EVALUATION
-Evaluate both the specific brand AND its parent company/entire corporate ecosystem against these exact 10 rules:
-
-1. No animal testing — no sales in China or anywhere testing is required.
-2. 100% vegan ingredients — no honey, beeswax, lanolin etc. in the products.
-3. No honey or bee-derived products in the portfolio of the brand or parent company.
-4. No meat products in the portfolio of the brand or parent company.
-5. No dairy products in the portfolio of the brand or parent company.
-6. No fish products in the portfolio of the brand or parent company.
-7. No alcohol beverages in the portfolio (wine, beer, spirits — not cosmetic alcohol).
-8. No ties to Israel (investments, corporate footprint, parent company ties, or operations).
-9. No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities.
-10. No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery).
-
-To ensure all rows completely fit within a single laptop screen snapshot without scrolling, keep your explanations in the breakdown precise, compact, and factual (under 12 words per row).
-
-OUTPUT FORMAT:
-You must respond with a valid JSON object ONLY. Do not include any conversational text, notes, or markdown wrappers outside the JSON structure.
-
+OUTPUT: Valid JSON only.
 {
     "status": "PASSED" or "FAILED",
-    "summary": "A precise corporate context overview explaining exact ultimate ownership, parent holding companies, and global distribution ecosystems based on verified business facts.",
+    "summary": "State the ultimate parent company clearly and why it passed/failed.",
     "breakdown": {
-        "Criterion 1": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 2": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 3": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 4": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 5": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 6": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 7": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 8": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 9": {"status": "Pass" or "Fail", "details": "Explanation"},
-        "Criterion 10": {"status": "Pass" or "Fail", "details": "Explanation"}
+        "Criterion 1": {"status": "Pass" or "Fail", "details": "..."},
+        ... (10 criteria)
     }
 }
 """
 
-# UI Dictionary perfectly mapped to your master checklist rules
 CRITERIA_DESCRIPTIONS = {
-    "Criterion 1": "No animal testing — no sales in China or anywhere testing is required",
-    "Criterion 2": "100% vegan ingredients — no honey, beeswax, lanolin etc.",
-    "Criterion 3": "No honey or bee-derived products in the portfolio",
-    "Criterion 4": "No meat products in the portfolio",
-    "Criterion 5": "No dairy products in the portfolio",
-    "Criterion 6": "No fish products in the portfolio",
-    "Criterion 7": "No alcohol beverages in the portfolio (wine, beer, spirits — not cosmetic alcohol)",
+    "Criterion 1": "No animal testing / No China sales",
+    "Criterion 2": "100% vegan ingredients",
+    "Criterion 3": "No honey in portfolio",
+    "Criterion 4": "No meat in portfolio",
+    "Criterion 5": "No dairy in portfolio",
+    "Criterion 6": "No fish in portfolio",
+    "Criterion 7": "No alcohol in portfolio",
     "Criterion 8": "No ties to Israel",
-    "Criterion 9": "No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities",
-    "Criterion 10": "No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery)"
+    "Criterion 9": "No harmful corporate behavior",
+    "Criterion 10": "No sugary products"
 }
 
+# 4. Sidebar Inputs
 st.sidebar.header("Configuration")
+api_key = st.secrets.get("GROQ_API_KEY", st.sidebar.text_input("Groq API Key:", type="password"))
+tavily_key = st.sidebar.text_input("Tavily API Key (Required for accuracy):", type="password")
 
-if "GROQ_API_KEY" in st.secrets:
-    api_key = st.secrets["GROQ_API_KEY"]
-else:
-    api_key = st.sidebar.text_input("Enter your Groq API Key (gsk_...):", type="password")
-
-tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
-
-# Form setup mapping the keyboard input focus
-with st.form(key="search_form", clear_on_submit=False):
-    query = st.text_input("Enter Brand or Product Name:", placeholder="Type brand name and press Enter...")
+# 5. Search & Analysis Execution
+with st.form(key="search_form"):
+    query = st.text_input("Enter Brand Name:", placeholder="e.g., Wild")
     submit_button = st.form_submit_button(label="Analyze")
 
-# Separate execution condition evaluated dynamically
-if query:
-    if not api_key:
-        st.error("Please provide a Groq API Key to proceed.")
+if submit_button and query:
+    if not api_key or not tavily_key:
+        st.error("Please provide both API Keys.")
     else:
-        with st.spinner(f"Auditing '{query}'..."):
-            try:
-                search_context = ""
-                clean_query = query.lower().strip()
-                
-                # Catches partial input searches like "ole" or "ole henriksen" cleanly
-                if clean_query in "ole henriksen" or "ole" in clean_query:
-                    search_context = (
-                        "CRITICAL VERIFIED CORPORATE FACT: Ole Henriksen is completely owned by Kendo Brands, "
-                        "which operates under the global luxury conglomerate LVMH (Moët Hennessy Louis Vuitton). "
-                        "Ole Henriksen individual formulations are certified cruelty-free and 100% vegan. "
-                        "However, parent conglomerate LVMH possesses massive global holdings across alcoholic beverage "
-                        "production (Moët & Chandon, Hennessy, Dom Pérignon, Veuve Clicquot) and handles cosmetic brands "
-                        "retailed within mainland China where regulatory animal testing frameworks apply."
-                    )
-                elif "davroe" in clean_query:
-                    search_context = (
-                        "CRITICAL VERIFIED CORPORATE FACT: Davroe is an independent, 100% Australian-owned and manufactured "
-                        "hair care brand operated by Dresslier & Co. It is completely family-owned, independent of multinational "
-                        "conglomerates, and certified 100% cruelty-free and vegan. Its entire corporate portfolio contains no honey, "
-                        "no dairy, no meat, no fish, no alcohol production, no ties to Israel, no creator exploitation history, "
-                        "and no sugary beverages or food lines."
-                    )
-                
-                elif tavily_key:
-                    search_url = "https://api.tavily.com/search"
-                    search_payload = {
-                        "api_key": tavily_key,
-                        "query": f"{query} brand cruelty free vegan parent company portfolio tracking israel alcohol dairy honey",
-                        "search_depth": "advanced",
-                        "include_answer": True
-                    }
-                    try:
-                        search_res = requests.post(search_url, json=search_payload, timeout=10).json()
-                        search_context = search_res.get("answer", "") + "\n\n" + "\n".join([r["content"] for r in search_res.get("results", [])])
-                    except Exception as search_err:
-                        st.sidebar.warning(f"Live search temporary lookup failure: {search_err}. Defaulting to verified LLM metrics.")
+        with st.spinner(f"Forensically auditing '{query}'..."):
+            # Step 1: Force Ownership Discovery Search
+            search_payload = {
+                "api_key": tavily_key,
+                "query": f"Who is the ultimate parent company of {query}? Has {query} been acquired by a conglomerate like Unilever or L'Oreal? Recent acquisition news.",
+                "search_depth": "advanced"
+            }
+            search_res = requests.post("https://api.tavily.com/search", json=search_payload).json()
+            search_context = search_res.get("answer", "") + "\n" + "\n".join([r["content"] for r in search_res.get("results", [])])
 
-                user_content = f"Analyze the following brand/product: {query}"
-                if search_context:
-                    user_content += f"\n\nUse the following verified live business search records to crosscheck your knowledge:\n{search_context}"
-
-                headers = {
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                }
-                payload = {
-                    "model": "llama-3.3-70b-versatile",
-                    "messages": [
-                        {"role": "system", "content": CRITERIA_PROMPT},
-                        {"role": "user", "content": user_content}
-                    ],
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0.0
-                }
-                
-                response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
-                response_data = response.json()
-                
-                if "error" in response_data:
-                    st.error(f"API Error: {response_data['error']['message']}")
-                else:
-                    result = json.loads(response_data["choices"][0]["message"]["content"])
-                    
-                    status_text = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
-                    st.markdown(f"**Results for: {query.upper()}** | **Status: {status_text}**")
-                    st.markdown(f"**Corporate Context:** {result.get('summary', '')}")
-                    
-                    table_markdown = "| Metric | Status | Ethical Requirement | Audit Finding |\n"
-                    table_markdown += "| :--- | :--- | :--- | :--- |\n"
-                    
-                    breakdown = result.get("breakdown", {})
-                    for criterion in [f"Criterion {i}" for i in range(1, 11)]:
-                        info = breakdown.get(criterion, {"status": "Fail", "details": "No data available."})
-                        rule_text = CRITERIA_DESCRIPTIONS.get(criterion, "Ethical Metric Rule Check")
-                        status_icon = "🍏 Pass" if info['status'].strip().lower() in ['pass', 'passed'] else "🍎 Fail"
-                        finding_text = info.get('details', '').replace('\n', ' ')
-                        
-                        table_markdown += f"| **{criterion}** | {status_icon} | {rule_text} | {finding_text} |\n"
-                    
-                    st.markdown(table_markdown)
-                            
-            except Exception as e:
-                st.error(f"An unexpected error occurred during execution: {e}")
+            # Step 2: LLM Audit
+            payload = {
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {"role": "system", "content": CRITERIA_PROMPT},
+                    {"role": "user", "content": f"Analyze: {query}\n\nSearch records for corporate ownership:\n{search_context}"}
+                ],
+                "response_format": {"type": "json_object"},
+                "temperature": 0.0
+            }
+            response = requests.post("https://api.groq.com/openai/v1/chat/completions", 
+                                     headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, 
+                                     json=payload).json()
+            
+            result = json.loads(response["choices"][0]["message"]["content"])
+            
+            # Display Results
+            st.markdown(f"**Results for: {query.upper()}** | **Status: {result.get('status')}**")
+            st.info(result.get('summary'))
+            
+            table_markdown = "| Metric | Status | Requirement | Details |\n| :--- | :--- | :--- | :--- |\n"
+            for i in range(1, 11):
+                crit = f"Criterion {i}"
+                info = result["breakdown"].get(crit, {"status": "Fail", "details": "N/A"})
+                table_markdown += f"| **{crit}** | {info['status']} | {CRITERIA_DESCRIPTIONS[crit]} | {info['details']} |\n"
+            st.markdown(table_markdown)
