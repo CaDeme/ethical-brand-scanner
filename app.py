@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 
-# Master prompt perfectly synced with YES ! ! ! ! MY PROMPT TO AI ! ! ! ! .png
+# Master prompt perfectly synced with your 10-point checklist rules
 CRITERIA_PROMPT = """
 You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product and its entire parent company/corporate ecosystem against a strict 10-point ethical checklist.
 
@@ -27,6 +27,8 @@ Evaluate both the specific brand AND its parent company/entire corporate ecosyst
 8. No ties to Israel (investments, corporate footprint, parent company ties, or operations).
 9. No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities.
 10. No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery).
+
+To help everything fit cleanly inside a single screen layout view without requiring scrolling, keep your explanations in the breakdown precise, compact, and factual.
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object ONLY. Do not include any conversational text, notes, or markdown wrappers outside the JSON structure.
@@ -63,11 +65,11 @@ CRITERIA_DESCRIPTIONS = {
     "Criterion 10": "No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery)"
 }
 
+# Set wide layout to optimize horizontal screen space usage
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-st.markdown("### 🇵🇸 **Stop the Genocide**")
-st.title("🛡️ Ethical Brand & Product Scanner")
-st.write("Evaluate brands and parent companies against strict ethical criteria.")
+st.markdown("##### 🇵🇸 **Stop the Genocide**")
+st.markdown("### 🛡️ Ethical Brand & Product Scanner")
 
 st.sidebar.header("Configuration")
 
@@ -78,15 +80,18 @@ else:
 
 tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
 
-query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Davroe, Ole Henriksen")
+# Using a native form structure enables "Press Enter to Submit" logic cleanly
+with st.form(key="search_form", clear_on_submit=False):
+    query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Davroe, Ole Henriksen")
+    submit_button = st.form_submit_button(label="Analyze Brand")
 
-if st.button("Analyze Brand"):
+if submit_button:
     if not api_key:
         st.error("Please provide a Groq API Key to proceed.")
     elif not query:
         st.warning("Please enter a brand name to analyze.")
     else:
-        with st.spinner(f"Auditing '{query}' and its corporate ecosystem..."):
+        with st.spinner(f"Auditing '{query}'..."):
             try:
                 search_context = ""
                 
@@ -148,19 +153,12 @@ if st.button("Analyze Brand"):
                 else:
                     result = json.loads(response_data["choices"][0]["message"]["content"])
                     
-                    st.markdown("---")
-                    st.header(f"Results for: {query}")
+                    # Condensed display header markers to maximize vertical screen efficiency
+                    status_text = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
+                    st.markdown(f"**Results for: {query.upper()}** | **Status: {status_text}**")
+                    st.markdown(f"**Corporate Context:** {result.get('summary', '')}")
                     
-                    if result.get("status") == "PASSED":
-                        st.success("🏆 **STATUS: GOLD STANDARD PASSED**")
-                    else:
-                        st.error("❌ **STATUS: FAILED CRITERIA**")
-                    
-                    st.subheader("Corporate Context")
-                    st.write(result.get("summary", "No corporate summary provided."))
-                    
-                    st.subheader("Detailed Checklist Breakdown")
-                    
+                    # High-density evaluation data grid matching single screenshot specifications
                     table_markdown = "| Metric | Status | Ethical Requirement | Audit Finding |\n"
                     table_markdown += "| :--- | :--- | :--- | :--- |\n"
                     
