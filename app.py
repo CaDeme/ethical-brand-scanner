@@ -5,7 +5,7 @@ import json
 # 1. Page Configuration
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-# 2. BANNERS (As requested)
+# 2. BANNERS
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
 st.markdown("### 🛡️ Ethical Brand & Product Scanner")
 
@@ -19,7 +19,7 @@ st.html("""
     </style>
 """)
 
-# 4. Secure Key Retrieval
+# 4. Secure Key Retrieval (Reads from Streamlit Cloud Secrets)
 try:
     GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
     TAVILY_API_KEY = st.secrets["TAVILY_API_KEY"]
@@ -65,7 +65,6 @@ with st.form(key="search_form"):
 
 if submit and query:
     with st.spinner(f"Auditing '{query}'..."):
-        # Forced Discovery Search
         tavily_payload = {
             "api_key": TAVILY_API_KEY,
             "query": f"Who is the ultimate parent company of {query}? Recent acquisitions by conglomerates? Ownership structure and ethical controversies.",
@@ -74,7 +73,6 @@ if submit and query:
         search_res = requests.post("https://api.tavily.com/search", json=tavily_payload).json()
         context = search_res.get("answer", "") + "\n" + "\n".join([r["content"] for r in search_res.get("results", [])])
 
-        # LLM Audit
         llm_payload = {
             "model": "llama-3.3-70b-versatile",
             "messages": [
@@ -89,7 +87,6 @@ if submit and query:
         
         result = json.loads(response["choices"][0]["message"]["content"])
         
-        # Display Results
         status_text = "🏆 GOLD STANDARD PASSED" if result.get("status") == "PASSED" else "❌ FAILED CRITERIA"
         st.markdown(f"**Results for: {query.upper()}** | **Status: {status_text}**")
         st.markdown(f"**Corporate Context:** {result.get('summary', '')}")
