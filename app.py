@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import json
 
-# 1. Defensive State Initialization
+# 1. Initialize State
 if 'step' not in st.session_state: st.session_state.step = 1
 if 'context' not in st.session_state: st.session_state.context = ""
 if 'audit_result' not in st.session_state: st.session_state.audit_result = None
@@ -40,11 +40,7 @@ if query:
 if st.session_state.step == 2 and st.session_state.context:
     with st.spinner("Applying ethical audit..."):
         prompt = """You are a strict JSON-only API. Audit the brand based on this context: {context}.
-        Check against these 10 criteria: 
-        1. No animal testing/sales in China. 2. 100% vegan. 3. No honey/bee. 4. No meat. 5. No dairy. 6. No fish. 
-        7. No alcohol beverages (not cosmetic). 8. No ties to Israel. 9. No public proof of vindictive behavior. 10. No sugary products.
-        Return ONLY valid JSON with fields: 'status', 'parent_company', 'breakdown'."""
-        
+        Check against these 10 criteria. Return ONLY valid JSON with fields: 'status', 'parent_company', 'breakdown'."""
         try:
             llm_payload = {
                 "model": "llama-3.3-70b-versatile",
@@ -56,14 +52,12 @@ if st.session_state.step == 2 and st.session_state.context:
             if resp_llm.status_code == 200:
                 content = resp_llm.json()["choices"][0]["message"]["content"]
                 res = json.loads(content)
-                
-                # Robust key checking
                 if 'status' in res and 'breakdown' in res:
                     st.session_state.audit_result = res
                     st.session_state.step = 3
                     st.rerun()
                 else:
-                    st.error("Audit failed: Invalid JSON structure returned by AI.")
+                    st.error("Audit failed: Invalid JSON structure.")
         except Exception as e:
             st.error(f"Audit failed: {e}")
 
@@ -72,7 +66,15 @@ if st.session_state.step == 3 and st.session_state.audit_result:
     res = st.session_state.audit_result
     st.success("Audit Complete")
     st.write(f"**Parent Company:** {res.get('parent_company', 'Unknown')}")
+    
+    # DEFENSIVE LOOP: Ensures 'data' is always a dictionary
     for criterion, data in res.get("breakdown", {}).items():
-        icon = "🍏" if "pass" in str(data.get('status', '')).lower() else "🍎"
-        st.write(f"{icon} **{criterion}**: {data.get('details', 'N/A')}")
+        if isinstance(data, dict):
+            status_text = str(data.get('status', 'fail')).lower()
+            icon = "🍏" if "pass" in status_text else "🍎"
+            details = data.get('details', 'N/A')
+            st.write(f"{icon} **{criterion}**: {details}")
+        else:
+            st.write(f"🍎 **{criterion}**: Data unavailable.")
+            
     st.button("New Scan", on_click=reset_app)
