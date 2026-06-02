@@ -79,8 +79,16 @@ if submit and query:
             "query": f"Who is the ultimate parent company of {query}? Recent acquisitions by conglomerates? Ownership structure and ethical controversies.",
             "search_depth": "advanced"
         }
-        search_res = requests.post("https://api.tavily.com/search", json=tavily_payload).json()
-        context = search_res.get("answer", "") + "\n" + "\n".join([r.get("content", "") for r in search_res.get("results", [])])
+        
+        try:
+            resp_search = requests.post("https://api.tavily.com/search", json=tavily_payload)
+            if resp_search.status_code == 200:
+                search_res = resp_search.json()
+                context = search_res.get("answer", "") + "\n" + "\n".join([r.get("content", "") for r in search_res.get("results", [])])
+            else:
+                context = "Search data unavailable."
+        except Exception:
+            context = "Search service error."
 
         # AI Audit
         llm_payload = {
@@ -92,15 +100,15 @@ if submit and query:
             "response_format": {"type": "json_object"},
             "temperature": 0.0
         }
-        response = requests.post("https://api.groq.com/openai/v1/chat/completions", 
-                                 headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, json=llm_payload)
         
-        response_data = response.json()
-        
-        if "error" in response_data:
-            st.error(f"API Error: {response_data['error'].get('message', 'Unknown error')}")
-        else:
-            try:
+        try:
+            response = requests.post("https://api.groq.com/openai/v1/chat/completions", 
+                                     headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, json=llm_payload)
+            response_data = response.json()
+            
+            if "error" in response_data:
+                st.error(f"API Error: {response_data['error'].get('message', 'Unknown error')}")
+            else:
                 content = response_data["choices"][0]["message"]["content"]
                 result = json.loads(content)
                 
@@ -115,5 +123,5 @@ if submit and query:
                     status_icon = "🍏 Pass" if info['status'].strip().lower() in ['pass', 'passed'] else "🍎 Fail"
                     table += f"| **{crit}** | {status_icon} | {CRITERIA_DESCRIPTIONS[crit]} | {info['details']} |\n"
                 st.markdown(table)
-            except Exception as e:
-                st.error(f"Failed to parse API response: {e}")
+        except Exception as e:
+            st.error(f"Execution Error: {e}")
