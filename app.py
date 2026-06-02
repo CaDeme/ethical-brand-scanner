@@ -5,22 +5,21 @@ import json
 # 1. Page Configuration first
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-# 2. FIXED STATIC HEADERS (Using standard markdown so Streamlit cannot drop them)
+# 2. FIXED STATIC HEADERS (Using standard markdown without modified spacing)
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
 st.markdown("### 🛡️ Ethical Brand & Product Scanner")
 
-# 3. CSS Layout Injection
+# 3. Safe CSS Layout Injection (Leaving vertical padding alone so text isn't hidden)
 st.html(
     """
     <style>
-        .block-container { padding-top: 0.2rem !important; padding-bottom: 0rem !important; }
         div[data-testid="stForm"] { padding: 0.1rem !important; margin-bottom: 0.2rem !important; border: none !important; }
         
-        /* Remove the 'Press Enter to submit form' text hint and clean focus colors */
+        /* Remove the 'Press Enter to submit form' text hint */
         div[data-testid="stFormHint"] { display: none !important; }
         .stTextInput div[data-baseweb="input"] { border-radius: 4px !important; }
         
-        /* Hide the native form submit button to maintain layout integrity */
+        /* Hide the native form submit button visually */
         div[data-testid="stFormSubmitButton"] { display: none !important; }
         
         table { width: 100% !important; font-size: 12.5px !important; }
@@ -118,7 +117,7 @@ if query:
                 search_context = ""
                 clean_query = query.lower().strip()
                 
-                # FIXED LOGIC: Catches partial input searches like "ole" or "ole henriksen" cleanly
+                # Catches partial input searches like "ole" or "ole henriksen" cleanly
                 if clean_query in "ole henriksen" or "ole" in clean_query:
                     search_context = (
                         "CRITICAL VERIFIED CORPORATE FACT: Ole Henriksen is completely owned by Kendo Brands, "
