@@ -72,7 +72,7 @@ st.html(
     """
     <style>
         .block-container { padding-top: 0.5rem !important; padding-bottom: 0rem !important; }
-        div[data-testid="stForm"] { padding: 0.2rem !important; margin-bottom: 0.4rem !important; border: none !important; }
+        div[data-testid="stForm"] { padding: 0.1rem !important; margin-bottom: 0.2rem !important; border: none !important; }
         
         /* Hide the redundant 'Press Enter to submit form' message and eliminate red highlight border */
         div[data-testid="stFormHint"] { display: none !important; }
@@ -83,13 +83,13 @@ st.html(
         
         table { width: 100% !important; font-size: 12.5px !important; }
         th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
-        hr { margin: 0.4rem 0 !important; }
+        hr { margin: 0.3rem 0 !important; }
         p, span { margin-bottom: 1px !important; }
     </style>
     """
 )
 
-# Display the message right above the clear main header
+# Render headers completely static outside of any form execution block
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
 st.markdown("### 🛡️ Ethical Brand & Product Scanner")
 
@@ -107,8 +107,8 @@ with st.form(key="search_form", clear_on_submit=False):
     query = st.text_input("Enter Brand or Product Name:", placeholder="Type brand name and press Enter...")
     submit_button = st.form_submit_button(label="Analyze")
 
-# Check if the text input field has a value entered when hitting Enter
-if query:
+# Separate execution condition cleanly so layout headers stay fixed above it
+if submit_button and query:
     if not api_key:
         st.error("Please provide a Groq API Key to proceed.")
     else:
