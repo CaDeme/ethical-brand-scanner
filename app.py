@@ -28,7 +28,7 @@ Evaluate both the specific brand AND its parent company/entire corporate ecosyst
 9. No documented public proof of vindictive or harmful behavior by parent company or investor toward founders or communities.
 10. No sugary products in the portfolio (sodas, sweet beverages, candy, confectionery).
 
-To ensure all rows completely fit within a single laptop screen snapshot without scrolling, keep your explanations in the breakdown precise, compact, and factual (under 15 words per row).
+To ensure all rows completely fit within a single laptop screen snapshot without scrolling, keep your explanations in the breakdown precise, compact, and factual (under 12 words per row).
 
 OUTPUT FORMAT:
 You must respond with a valid JSON object ONLY. Do not include any conversational text, notes, or markdown wrappers outside the JSON structure.
@@ -67,23 +67,18 @@ CRITERIA_DESCRIPTIONS = {
 
 st.set_page_config(page_title="Ethical Brand Scanner", layout="wide")
 
-# Custom CSS Injector to optimize layout density for single screenshots
-st.markdown(
+# Safe HTML layout injector to remove vertical margins for single screenshots
+st.html(
     """
     <style>
-        /* Reduce spacing between elements */
-        .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
-        div[data-testid="stForm"] { padding: 0.5rem !important; margin-bottom: 0.5rem !important; }
-        .stTextInput { margin-bottom: -1rem !important; }
-        
-        /* Compress the data table style natively */
-        table { width: 100% !important; font-size: 13px !important; }
-        th, td { padding: 4px 6px !important; line-height: 1.2 !important; }
-        hr { margin: 0.5rem 0 !important; }
-        p, span { margin-bottom: 0.2rem !important; }
+        .block-container { padding-top: 0.5rem !important; padding-bottom: 0rem !important; }
+        div[data-testid="stForm"] { padding: 0.4rem !important; margin-bottom: 0.4rem !important; }
+        table { width: 100% !important; font-size: 12.5px !important; }
+        th, td { padding: 3px 5px !important; line-height: 1.15 !important; }
+        hr { margin: 0.4rem 0 !important; }
+        p, span { margin-bottom: 0.1rem !important; }
     </style>
-    """,
-    unsafe_html=True
+    """
 )
 
 st.markdown("##### 🇵🇸 **Stop the Genocide**")
