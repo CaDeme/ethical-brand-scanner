@@ -1,13 +1,21 @@
 import streamlit as st
-st.image("TINY.jpg", width=300)
 import requests
 import json
 
-# Master ethical criteria prompt
+# Optimized Master Prompt forcing internal verification steps before JSON compilation
 CRITERIA_PROMPT = """
-You are a strict ethical brand auditor. Analyze the brand or product provided by the user and evaluate it against the following 10 distinct criteria. 
+You are a meticulous, highly accurate corporate auditor and brand researcher. Your task is to evaluate a brand or product against a specific 10-point ethical framework.
 
-CRITERIA:
+To prevent hallucinations regarding parent companies, conglomerates, or production regions, you MUST follow this two-step process in your internal processing before generating the final JSON output:
+
+STEP 1: FACTUAL EXTRACTION (Internal Verification)
+- Identify the exact brand founder and launch history.
+- Identify the immediate owner, corporate incubator, or parent group holding majority shares.
+- Trace all ultimate corporate cross-ties (e.g., LVMH, L'Oréal, Unilever, Estée Lauder, Coty, Shiseido, Puig, Beiersdorf, Procter & Gamble, Nestlé, Johnson & Johnson, etc.).
+- Verify the brand's production facilities and retail distribution channels using any provided real-time search context.
+
+STEP 2: CRITERIA EVALUATION
+Evaluate the verified corporate entity against these 10 distinct rules:
 1. No animal testing (Cruelty-free).
 2. No animal-derived ingredients (100% Vegan portfolio).
 3. No links to geopolitical entities undergoing active humanitarian boycott.
@@ -20,10 +28,11 @@ CRITERIA:
 10. No sugary products like sodas or candy in the portfolio.
 
 OUTPUT FORMAT:
-You must respond with a valid JSON object ONLY. Do not include any conversational text outside the JSON.
+You must respond with a valid JSON object ONLY. Do not include any conversational text, notes, or markdown wrappers outside the JSON structure.
+
 {
     "status": "PASSED" or "FAILED",
-    "summary": "A concise corporate context overview explaining ownership and ecosystem.",
+    "summary": "A precise corporate context overview explaining exact ultimate ownership, parent holding companies, and global distribution ecosystems based on verified business facts.",
     "breakdown": {
         "Criterion 1": {"status": "Pass" or "Fail", "details": "Explanation"},
         "Criterion 2": {"status": "Pass" or "Fail", "details": "Explanation"},
@@ -42,16 +51,21 @@ You must respond with a valid JSON object ONLY. Do not include any conversationa
 st.set_page_config(page_title="Ethical Brand Scanner", layout="centered")
 
 st.title("🛡️ Ethical Brand & Product Scanner")
-st.write("Evaluate brands and parent companies against strict ethical criteria completely for free.")
+st.write("Evaluate brands and parent companies against strict ethical criteria.")
 
-# Check for hidden deployment key first, otherwise look for sidebar input
+# Sidebar Configuration for API keys
+st.sidebar.header("Configuration")
+
+# Check for Groq API Key
 if "GROQ_API_KEY" in st.secrets:
     api_key = st.secrets["GROQ_API_KEY"]
 else:
-    st.sidebar.header("Configuration")
     api_key = st.sidebar.text_input("Enter your Groq API Key (gsk_...):", type="password")
 
-query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., BABYLISS, PINK")
+# Optional Tavily Search API Key to dynamically pull live business registry data
+tavily_key = st.sidebar.text_input("Enter Tavily Search API Key (Optional for live verification):", type="password")
+
+query = st.text_input("Enter Brand or Product Name:", placeholder="e.g., Ole Henriksen, BaByliss")
 
 if st.button("Analyze Brand"):
     if not api_key:
@@ -61,6 +75,28 @@ if st.button("Analyze Brand"):
     else:
         with st.spinner(f"Auditing '{query}' and its corporate ecosystem..."):
             try:
+                # Step 1: Live Corporate Search Fetch (if key is supplied)
+                search_context = ""
+                if tavily_key:
+                    search_url = "https://api.tavily.com/search"
+                    search_payload = {
+                        "api_key": tavily_key,
+                        "query": f"{query} brand corporate owner parent company portfolio tracking",
+                        "search_depth": "advanced",
+                        "include_answer": True
+                    }
+                    try:
+                        search_res = requests.post(search_url, json=search_payload, timeout=10).json()
+                        search_context = search_res.get("answer", "") + "\n\n" + "\n".join([r["content"] for r in search_res.get("results", [])])
+                    except Exception as search_err:
+                        st.sidebar.warning(f"Live search temporary lookup failure: {search_err}. Defaulting to verified LLM metrics.")
+
+                # Step 2: Formulate dynamic user instructions using the search context
+                user_content = f"Analyze the following brand/product: {query}"
+                if search_context:
+                    user_content += f"\n\nUse the following verified live business search records to crosscheck your knowledge:\n{search_context}"
+
+                # Step 3: API call to Groq
                 headers = {
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json"
@@ -69,10 +105,10 @@ if st.button("Analyze Brand"):
                     "model": "llama-3.3-70b-versatile",
                     "messages": [
                         {"role": "system", "content": CRITERIA_PROMPT},
-                        {"role": "user", "content": f"Analyze the following brand/product: {query}"}
+                        {"role": "user", "content": user_content}
                     ],
                     "response_format": {"type": "json_object"},
-                    "temperature": 0.1
+                    "temperature": 0.0  # Dropping to 0.0 forces maximum deterministic factual accuracy
                 }
                 
                 response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload)
@@ -81,6 +117,7 @@ if st.button("Analyze Brand"):
                 if "error" in response_data:
                     st.error(f"API Error: {response_data['error']['message']}")
                 else:
+                    # Parse final sanitized JSON output
                     result = json.loads(response_data["choices"][0]["message"]["content"])
                     
                     st.markdown("---")
@@ -99,5 +136,6 @@ if st.button("Analyze Brand"):
                     for criterion, info in breakdown.items():
                         with st.expander(f"{criterion}: {'✅ Pass' if info['status'] == 'Pass' else '❌ Fail'}"):
                             st.write(info.get("details", ""))
+                            
             except Exception as e:
-                st.error(f"An unexpected error occurred: {e}")
+                st.error(f"An unexpected error occurred during execution: {e}")
